@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/db.php';
+
+$pdo = getDatabaseConnection();
 
 function seedLivros(PDO $pdo): void {
     $livros = [
@@ -35,4 +38,8 @@ function seedLivros(PDO $pdo): void {
             ]);
         }
     }
+
+    echo "<h1>Seed realizado com sucesso!</h1> <a href='../index.php'> Voltar para a página incial </a>";
 }
+
+seedLivros($pdo);

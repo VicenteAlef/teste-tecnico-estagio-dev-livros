@@ -1,21 +1,13 @@
 <?php
 
-require_once 'database/db.php';
-require_once 'database/seeder.php';
+require_once __DIR__ . '/database/db.php';
 
 $pdo = getDatabaseConnection();
-seedLivros($pdo);
+$message = $_GET['msg'] ?? '';
 
 $stmt = $pdo->query("SELECT * FROM livros");
 $livros = $stmt->fetchAll();
 
-// try {
-//     $pdo = getDatabaseConnection();
-
-//     echo "Conexão com o banco de dados realizada com sucesso.";
-// } catch (PDOException $e) {
-//     echo 'Erro ao conectar com o banco de dados: ' . $e->getMessage();
-// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,8 +18,19 @@ $livros = $stmt->fetchAll();
     <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-    <main>
-        <h1>Livros</h1>
+    <div class="container">
+        <header class="header">
+            <h1>Livros</h1>
+            <a href="save.php" class="btn btn-primary">+ Novo Livro</a>
+        </header>
+    </div>
+
+    <main class="container">
+
+        <?php if ($message === 'created'): ?>
+            <div class="alert alert-success">Livro adicionado com sucesso!</div>
+        <?php endif; ?>
+
         <div class="card">
 
             
@@ -44,16 +47,15 @@ $livros = $stmt->fetchAll();
                     <tbody>
                         <?php foreach ($livros as $livro): ?>
                             <tr>
-                                <!-- htmlspecialchars evita vulnerabilidade XSS -->
                                 <td><strong><?= htmlspecialchars($livro['titulo']) ?></strong></td>
                                 <td><?= htmlspecialchars($livro['autor']) ?></td>
                                 <td><?= htmlspecialchars($livro['categoria']) ?></td>
                                 <td>
                                     <?php 
                                         $classeStatus = match($livro['status']) {
-                                            'Assistido' => 'badge-assistido',
-                                            'Quero Assistir' => 'badge-quero-assistir',
-                                            default => 'badge-abandonado'
+                                            'Lido' => 'badge-lido',
+                                            'Em andamento' => 'badge-em-andamento',
+                                            default => 'badge-nunca-lido'
                                             };
                                             ?>
                                     <span class="badge <?= $classeStatus ?>">

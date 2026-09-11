@@ -13,8 +13,8 @@ function getDatabaseConnection(): PDO {
         titulo TEXT NOT NULL UNIQUE,
         autor TEXT NOT NULL,
         categoria TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'nunca lido'
-            CHECK (status IN ('nunca lido', 'em andamento', 'lido'))
+        status TEXT NOT NULL DEFAULT 'Nunca lido'
+            CHECK (status IN ('Nunca lido', 'Em andamento', 'Lido'))
     )";
 
     $pdo->exec($query);

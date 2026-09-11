@@ -29,6 +29,8 @@ $livros = $stmt->fetchAll();
 
         <?php if ($message === 'created'): ?>
             <div class="alert alert-success">Livro adicionado com sucesso!</div>
+        <?php elseif ($message === 'deleted'): ?>
+            <div class="alert alert-success">Livro excluído com sucesso!</div>
         <?php endif; ?>
 
         <div class="card">
@@ -42,6 +44,7 @@ $livros = $stmt->fetchAll();
                             <th>Diretor</th>
                             <th>Categoria</th>
                             <th>Status</th>
+                            <th style="text-align: right;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,7 +65,12 @@ $livros = $stmt->fetchAll();
                                         <?= htmlspecialchars($livro['status']) ?>
                                     </span>
                                 </td>
-                                
+                                <td style="text-align: right; white-space: nowrap;">
+                                    <form action="delete.php" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este livro?');">
+                                        <input type="hidden" name="id" value="<?= $livro['id'] ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

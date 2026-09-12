@@ -3,7 +3,11 @@ require_once __DIR__ . '/database/db.php';
 
 $pdo = getDatabaseConnection();
 
+$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+$editMode = !empty($id);
+
 $livro = [
+    'id' => '',
     'titulo' => '',
     'autor' => '',
     'categoria' => '',
@@ -14,7 +18,21 @@ $erros = [];
 $categoriasPermitidas = ['Ação', 'Comédia', 'Drama', 'Ficção Científica', 'Terror', 'Suspense', 'Fantasia', 'Auto-ajuda', 'Outros'];
 $statusPermitidos = ['Nunca lido', 'Em andamento', 'Lido'];
 
+if ($editMode && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt = $pdo->prepare("SELECT * FROM livros WHERE id = :id");
+    $stmt->execute([':id' => $id]);
+    $registro = $stmt->fetch();
+
+    if ($registro) {
+        $livro = $registro;
+    } else {
+        header('Location: index.php');
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $livro['id'] = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
     $livro['titulo'] = trim($_POST['titulo'] ?? '');
     $livro['autor'] = trim($_POST['autor'] ?? '');
     $livro['categoria'] = trim($_POST['categoria'] ?? '');
@@ -37,14 +55,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($erros)) {
-        $sql = "INSERT INTO livros (titulo, autor, categoria, status) VALUES (:titulo, :autor, :categoria, :status)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':titulo' => $livro['titulo'],
-            ':autor' => $livro['autor'],
-            ':categoria' => $livro['categoria'],
-            ':status' => $livro['status']
-        ]);
+        if (!empty($livro['id'])) {
+            // Update
+            $sql = "UPDATE livros SET titulo = :titulo, autor = :autor, categoria = :categoria, status = :status WHERE id = :id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':titulo' => $livro['titulo'],
+                ':autor' => $livro['autor'],
+                ':categoria' => $livro['categoria'],
+                ':status' => $livro['status'],
+                ':id' => $livro['id']
+            ]);
+            header('Location: index.php?msg=updated');
+            exit;
+        } else {
+            // Post
+            $sql = "INSERT INTO livros (titulo, autor, categoria, status) VALUES (:titulo, :autor, :categoria, :status)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':titulo' => $livro['titulo'],
+                ':autor' => $livro['autor'],
+                ':categoria' => $livro['categoria'],
+                ':status' => $livro['status']
+            ]);
+        }
         header('Location: index.php?msg=created');
         exit;
     }
@@ -53,16 +87,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo livro</title>
+    <title><?= $editMode ? 'Editar Livro' : 'Novo Livro' ?></title>
     <link rel="stylesheet" href="assets/styles.css">
 </head>
+
 <body>
     <div class="container" style="max-width: 600px;">
         <header class="header">
-            <h1>Cadastrar Novo livro</h1>
+            <h1><?= $editMode ? 'Editar Livro' : 'Cadastrar Livro' ?></h1>
         </header>
 
         <?php if (!empty($erros)): ?>
@@ -78,16 +114,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="card">
             <form id="livroForm" action="save.php" method="POST" novalidate>
-                
+                <input type="hidden" name="id" value="<?= htmlspecialchars($livro['id']) ?>">
+
                 <div class="form-group">
                     <label for="titulo">Título do livro</label>
-                    <input type="text" id="titulo" name="titulo" placeholder="Ex: O Hobbit">
+                    <input type="text" id="titulo" name="titulo" value="<?= htmlspecialchars($livro['titulo']) ?>" placeholder="Ex: O Hobbit">
                     <span id="tituloError" class="client-error"></span>
                 </div>
 
                 <div class="form-group">
                     <label for="autor">Autor</label>
-                    <input type="text" id="autor" name="autor" placeholder="Ex: J. R. R. Tolkien">
+                    <input type="text" id="autor" name="autor" value="<?= htmlspecialchars($livro['autor']) ?>" placeholder="Ex: J. R. R. Tolkien">
                     <span id="autorError" class="client-error"></span>
                 </div>
 
@@ -96,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select id="categoria" name="categoria">
                         <option value="">Selecione uma categoria...</option>
                         <?php foreach ($categoriasPermitidas as $cat): ?>
-                            <option value="<?= $cat ?>">
+                            <option value="<?= $cat ?>" <?= ($livro['categoria'] === $cat) ? 'selected' : '' ?>>
                                 <?= $cat ?>
                             </option>
                         <?php endforeach; ?>
@@ -108,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="status">Status</label>
                     <select id="status" name="status">
                         <?php foreach ($statusPermitidos as $st): ?>
-                            <option value="<?= $st ?>">
+                            <option value="<?= $st ?>" <?= ($livro['status'] === $st) ? 'selected' : '' ?>>
                                 <?= $st ?>
                             </option>
                         <?php endforeach; ?>
@@ -117,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Cadastrar livro</button>
+                    <button type="submit" class="btn btn-primary"><?= $editMode ? 'Salvar Alterações' : 'Cadastrar Livro' ?></button>
                     <a href="index.php" class="btn btn-secondary">Cancelar</a>
                 </div>
             </form>
@@ -126,4 +163,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="assets/scripts.js"></script>
 </body>
+
 </html>
